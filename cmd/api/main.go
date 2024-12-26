@@ -1,8 +1,9 @@
 package main
 
 import (
-	"_Insta_shop/internal/server"
 	"fmt"
+
+	"instashop/internal/server"
 )
 
 func main() {

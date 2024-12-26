@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"_Insta_shop/internal/server"
+	"instashop/internal/server"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"

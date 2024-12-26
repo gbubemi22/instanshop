@@ -9,27 +9,32 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
-	"_Insta_shop/internal/database"
+	"instashop/internal/database"
 )
 
 type Server struct {
-	port int
-
-	db database.Service
+	port        int
+	db          database.Service
+	cleanupFunc func()
 }
 
 func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
-		port: port,
-
-		db: database.New(),
+	portStr := os.Getenv("PORT")
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		port = 8080
 	}
 
-	// Declare Server config
+	db := database.New()
+
+	newServer := &Server{
+		port: port,
+		db:   db,
+	}
+
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+		Addr:         fmt.Sprintf(":%d", newServer.port),
+		Handler:      newServer.RegisterRoutes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,

@@ -3,6 +3,21 @@
 # Build the application
 all: build
 
+table:
+	migrate create -ext sql -dir migrations -seq $(name)
+
+
+up:
+	migrate -database "postgres://testuser:gbubemi222@localhost:5432/shop?sslmode=disable" -path migrations up
+
+
+down:
+	migrate -database "postgres://testuser:gbubemi222@localhost:5432/shop?sslmode=disable" -path migrations down
+	
+
+
+	
+
 build:
 	@echo "Building..."
 	

@@ -1,4 +1,4 @@
-# Project _Insta_shop
+# Project instashop
 
 One Paragraph of project description goes here
 
