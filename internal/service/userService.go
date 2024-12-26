@@ -263,7 +263,7 @@ func (s *UserService) Login( email, password string) (string, error) {
 	}
 
 	// Generate JWT token
-	token, err := utils.GenerateJWT(fmt.Sprintf("%d", user.ID))
+	token, err := utils.GenerateJWT(fmt.Sprintf("%d", user.ID), user.Role)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}

@@ -21,6 +21,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	userController := controller.NewUserController(userService)
 	productService := service.NewProductService(dbService.GetGORM())
 	productController := controller.NewProductController(productService)
+	orderService := service.NewOderService(dbService.GetGORM())
+	orderController := controller.NewOrderController(orderService)
 
 	// Initialize router
 	r := gin.Default()
@@ -51,6 +53,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 		authorized.GET("/products", productController.GetAllProductsByUserID)
 		authorized.PATCH("/products/:productID", productController.UpdateProduct)
 		authorized.DELETE("/products/:productID", productController.DeletePendingProduct)
+
+		// Order routes
+		orderRoutes := authorized.Group("/orders")
+		{
+			orderRoutes.POST("/", orderController.PlaceOrderHandler)
+			orderRoutes.GET("/", orderController.ListOrdersHandler)
+			orderRoutes.DELETE("/:orderID", orderController.CancelOrderHandler)
+		}
+
 	}
 
 	// Handle not found routes
