@@ -47,3 +47,9 @@ clean up binary from the last build
 ```bash
 make clean
 ```
+
+
+postman Documentation
+```bash
+https://documenter.getpostman.com/view/26055191/2sAYJ6BzR4
+```
