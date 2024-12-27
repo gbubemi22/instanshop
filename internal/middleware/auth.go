@@ -1,102 +1,117 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/golang-jwt/jwt"
+
+	"instashop/internal/utils"
 )
+
+var jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 func VerifyToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Load environment variables from .env file
-		err := godotenv.Load()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success":        false,
-				"message":        "Failed to load environment variables",
-				"httpStatusCode": http.StatusInternalServerError,
-				"error":          "INTERNAL_SERVER_ERROR",
-			})
+		tokenString := c.GetHeader("Authorization")
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing token"})
 			c.Abort()
 			return
 		}
 
-		// Retrieve the access token secret from environment variables
-		accessTokenSecret := os.Getenv("JWT_SECRET")
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		authHeader := c.GetHeader("Authorization")
-		serviceName := os.Getenv("SERVICE_NAME")
-
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success":        false,
-				"message":        "Authorization header is missing or invalid",
-				"httpStatusCode": http.StatusUnauthorized,
-				"error":          "VALIDATION_ERROR",
-				"service":        serviceName,
-			})
-			c.Abort()
-			return
-		}
-
-		token := authHeader[7:]
-
-		// Verify token
-		claims := jwt.MapClaims{}
-		jwtToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(accessTokenSecret), nil
+		claims := &utils.Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
 		})
 
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success":        false,
-				"message":        "Invalid token",
-				"httpStatusCode": http.StatusUnauthorized,
-				"error":          "VALIDATION_ERROR",
-				"service":        serviceName,
-			})
+		if err != nil || !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		if !jwtToken.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success":        false,
-				"message":        "Invalid token",
-				"httpStatusCode": http.StatusUnauthorized,
-				"error":          "VALIDATION_ERROR",
-				"service":        serviceName,
-			})
-			c.Abort()
-			return
-		}
+		// Set user_id and role in the context
+		c.Set("user_id", claims.UserID)
+		c.Set("role", claims.Role)
 
-		// Set user information in the context
-		userID, ok := claims["user_id"].(string)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success":        false,
-				"message":        "Invalid token format",
-				"httpStatusCode": http.StatusUnauthorized,
-				"error":          "VALIDATION_ERROR",
-				"service":        serviceName,
-			})
-			c.Abort()
-			return
-		}
-		c.Set("userID", userID)
+		fmt.Printf("Extracted user_id: %s, role: %s from the token\n", claims.UserID, claims.Role)
 
-		// Extract role from claims and set it in the context
-		role, ok := claims["role"].(string)
-		if ok {
-			c.Set("role", role) // Set role in context
-		}
-
-		// Proceed to the next middleware or handler
+		// Continue to the next handler
 		c.Next()
 	}
 }
+
+// func VerifyToken() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		// Retrieve the access token secret from environment variables
+// 		accessTokenSecret := os.Getenv("JWT_SECRET")
+// 		serviceName := os.Getenv("SERVICE_NAME")
+
+// 		authHeader := c.GetHeader("Authorization")
+// 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+// 			c.JSON(http.StatusUnauthorized, gin.H{
+// 				"success":        false,
+// 				"message":        "Authorization header is missing or invalid",
+// 				"httpStatusCode": http.StatusUnauthorized,
+// 				"error":          "VALIDATION_ERROR",
+// 				"service":        serviceName,
+// 			})
+// 			c.Abort()
+// 			return
+// 		}
+
+// 		token := authHeader[7:]
+
+// 		// Verify token
+// 		claims := jwt.MapClaims{}
+// 		jwtToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+// 			return []byte(accessTokenSecret), nil
+// 		})
+
+// 		if err != nil || !jwtToken.Valid {
+// 			c.JSON(http.StatusUnauthorized, gin.H{
+// 				"success":        false,
+// 				"message":        "Invalid token",
+// 				"httpStatusCode": http.StatusUnauthorized,
+// 				"error":          "VALIDATION_ERROR",
+// 				"service":        serviceName,
+// 			})
+// 			c.Abort()
+// 			return
+// 		}
+
+// 		// Extract user_id and validate
+// 		userID, ok := claims["user_id"].(string)
+// 		if !ok {
+// 			c.JSON(http.StatusUnauthorized, gin.H{
+// 				"success":        false,
+// 				"message":        "Invalid user ID format",
+// 				"httpStatusCode": http.StatusUnauthorized,
+// 				"error":          "VALIDATION_ERROR",
+// 				"service":        serviceName,
+// 			})
+// 			c.Abort()
+// 			return
+// 		}
+// 		c.Set("user_id", userID)
+
+// 		// Extract role and validate
+// 		role, ok := claims["role"].(string)
+// 		if !ok {
+// 			role = "guest" // Default role
+// 		}
+// 		c.Set("role", role)
+
+// 		// Debug logs
+// 		fmt.Printf("Extracted user_id: %s, role: %s\n", userID, role)
+
+// 		// Proceed to the next middleware or handler
+// 		c.Next()
+// 	}
+// }

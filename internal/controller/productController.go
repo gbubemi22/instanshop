@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -20,7 +21,8 @@ func NewProductController(productService *service.ProductService) *ProductContro
 
 func (ctrl *ProductController) CreateProduct(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
+	fmt.Println("Extracted user_id C: ", userID)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -39,47 +41,91 @@ func (ctrl *ProductController) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	// Extract role from the context
-	role, exists := c.Get("role")
-	if !exists {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
-		return
+	// Bind the request body
+	var input struct {
+		Name        string  `json:"name" binding:"required"`
+		Description string  `json:"description" binding:"required"`
+		Price       float64 `json:"price" binding:"required"`
 	}
 
-	roleStr, ok := role.(string)
-	if !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
-		return
-	}
-
-	// Check if the user has the required role to create a product
-	if roleStr != "admin" && roleStr != "editor" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to create a product"})
-		return
-	}
-
-	// Bind the request body to the product struct
-	var product model.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	// Set the UserID in the product
-	product.UserID = uint(userIDUint)
-
 	// Create the product using the ProductService
-	if err := ctrl.ProductService.CreateProduct(c.Request.Context(), &product); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	product, err := ctrl.ProductService.CreateProduct(c.Request.Context(), uint(userIDUint), input.Name, input.Description, input.Price)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Product created successfully"})
+	// Return the created product
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Product created successfully",
+		"product": product,
+	})
 }
+
+// func (ctrl *ProductController) CreateProduct(c *gin.Context) {
+// 	// Extract userID from the context
+// 	userID, exists := c.Get("userID")
+// 	fmt.Printf("Extracted user_id: %v", userID,)
+
+// 	if !exists {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+// 		return
+// 	}
+
+// 	// Ensure userID is in the correct format
+// 	userIDFloat, ok := userID.(float64)
+// 	if !ok {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID format"})
+// 		return
+// 	}
+// 	userIDUint := uint(userIDFloat)
+
+// 	// Extract role from the context
+// 	role, exists := c.Get("role")
+// 	if !exists {
+// 		c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
+// 		return
+// 	}
+
+// 	roleStr, ok := role.(string)
+// 	if !ok {
+// 		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
+// 		return
+// 	}
+
+// 	// Check if the user has the required role to create a product
+// 	if roleStr != "admin" && roleStr != "editor" {
+// 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to create a product"})
+// 		return
+// 	}
+
+// 	// Bind the request body to the product struct
+// 	var product model.Product
+// 	if err := c.ShouldBindJSON(&product); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+// 		return
+// 	}
+
+// 	// Set the UserID in the product
+// 	product.UserID = userIDUint
+
+// 	// Create the product using the ProductService
+// 	if err := ctrl.ProductService.CreateProduct(c.Request.Context(), &product); err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusCreated, gin.H{"message": "Product created successfully", "product": product})
+// }
 
 func (ctrl *ProductController) GetProduct(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -138,7 +184,7 @@ func (ctrl *ProductController) GetProduct(c *gin.Context) {
 // GetAllProductsByUserID retrieves all products for a specific user
 func (ctrl *ProductController) GetAllProductsByUserID(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -188,7 +234,7 @@ func (ctrl *ProductController) GetAllProductsByUserID(c *gin.Context) {
 // UpdateProduct updates an existing product
 func (ctrl *ProductController) UpdateProduct(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -253,7 +299,7 @@ func (ctrl *ProductController) UpdateProduct(c *gin.Context) {
 // DeletePendingProduct deletes a pending product
 func (ctrl *ProductController) DeletePendingProduct(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return

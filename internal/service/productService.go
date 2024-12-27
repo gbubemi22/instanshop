@@ -19,18 +19,21 @@ func NewProductService(db *gorm.DB) *ProductService {
 	return &ProductService{DB: db}
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, product *model.Product) error {
-	// Validate input
-	if product.Name == "" || product.Description == "" || product.Price == 0 || product.UserID == 0 {
-		utils.NewBadRequestError("name, description, userId, and price are required")
+func (s *ProductService) CreateProduct(ctx context.Context, userID uint, name, description string, price float64) (*model.Product, error) {
+	// Create a new Product instance
+	product := &model.Product{
+		UserID:      userID,
+		Name:        name,
+		Description: description,
+		Price:       price,
 	}
 
-	// Create product
+	// Save the product to the database
 	if err := s.DB.WithContext(ctx).Create(product).Error; err != nil {
-		return fmt.Errorf("internal server error: %w", err)
+		return nil, fmt.Errorf("failed to create product: %w", err)
 	}
 
-	return nil
+	return product, nil
 }
 
 func (s *ProductService) GetProduct(ctx context.Context, productID uint, userID uint) (*model.Product, error) {
@@ -96,5 +99,3 @@ func (s *ProductService) DeletePendingProduct(ctx context.Context, productID uin
 
 	return nil
 }
-
-

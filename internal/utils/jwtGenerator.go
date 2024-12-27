@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -17,6 +17,11 @@ type Claims struct {
 }
 
 func GenerateJWT(userID, role string) (string, error) {
+	// Load the JWT secret from environment
+	jwtKey := []byte(os.Getenv("JWT_SECRET"))
+	fmt.Printf("CHECK: %w", jwtKey)
+
+	// Define token expiration
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
@@ -26,31 +31,14 @@ func GenerateJWT(userID, role string) (string, error) {
 		},
 	}
 
+	// Generate token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
 
 	return tokenString, nil
 }
-func ValidateJWT(tokenString string) (*Claims, error) {
-	claims := &Claims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
 
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			return nil, errors.New("invalid token signature")
-		}
-		return nil, errors.New("failed to parse token")
-	}
-
-	if !token.Valid {
-		return nil, errors.New("invalid token")
-	}
-
-	return claims, nil
-}
