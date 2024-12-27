@@ -53,7 +53,7 @@ func (ctrl *OrderController) PlaceOrderHandler(c *gin.Context) {
 	}
 
 	// Check if the user has the required role to create a product
-	if roleStr != "user" && roleStr != "editor" {
+	if roleStr != "admin" && roleStr != "editor" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to place an order"})
 		return
 	}
@@ -78,11 +78,10 @@ func (ctrl *OrderController) PlaceOrderHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"order": placedOrder})
 }
 
-
 // ListOrdersHandler handles fetching all orders for a specific user
 func (ctrl *OrderController) ListOrdersHandler(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -91,26 +90,6 @@ func (ctrl *OrderController) ListOrdersHandler(c *gin.Context) {
 	userIDUint, err := strconv.ParseUint(userID.(string), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-
-	// Extract role from the context
-	role, exists := c.Get("role")
-	if !exists {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
-		return
-	}
-
-	roleStr, ok := role.(string)
-	if !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
-		return
-	}
-
-	// Check if the user has the required role to create a product
-	if roleStr != "user" && roleStr != "editor" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to fetch  orders"})
 		return
 	}
 
@@ -127,7 +106,7 @@ func (ctrl *OrderController) ListOrdersHandler(c *gin.Context) {
 // CancelOrderHandler handles canceling an order
 func (ctrl *OrderController) CancelOrderHandler(c *gin.Context) {
 	// Extract userID from the context
-	userID, exists := c.Get("userID")
+	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
@@ -140,23 +119,23 @@ func (ctrl *OrderController) CancelOrderHandler(c *gin.Context) {
 	}
 
 	// Extract role from the context
-	role, exists := c.Get("role")
-	if !exists {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
-		return
-	}
+	// role, exists := c.Get("role")
+	// if !exists {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Role not found"})
+	// 	return
+	// }
 
-	roleStr, ok := role.(string)
-	if !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
-		return
-	}
+	// roleStr, ok := role.(string)
+	// if !ok {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
+	// 	return
+	// }
 
-	// Check if the user has the required role to create a product
-	if roleStr != "user" && roleStr != "editor" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to cancel an order"})
-		return
-	}
+	// // Check if the user has the required role to create a product
+	// if roleStr != "user" && roleStr != "editor" {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "You do not have permission to cancel an order"})
+	// 	return
+	// }
 
 	// Extract orderID from the URL
 	orderIDStr := c.Param("orderID")

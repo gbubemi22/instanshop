@@ -59,7 +59,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		{
 			orderRoutes.POST("/", orderController.PlaceOrderHandler)
 			orderRoutes.GET("/", orderController.ListOrdersHandler)
-			orderRoutes.DELETE("/:orderID", orderController.CancelOrderHandler)
+			orderRoutes.PATCH("/:orderID", orderController.CancelOrderHandler)
 		}
 
 	}
